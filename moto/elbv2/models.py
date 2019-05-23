@@ -252,7 +252,7 @@ class FakeLoadBalancer(BaseModel):
     VALID_ATTRS = {'access_logs.s3.enabled', 'access_logs.s3.bucket', 'access_logs.s3.prefix',
                    'deletion_protection.enabled', 'idle_timeout.timeout_seconds'}
 
-    def __init__(self, name, security_groups, subnets, vpc_id, arn, dns_name, scheme='internet-facing'):
+    def __init__(self, name, security_groups, subnets, vpc_id, arn, dns_name, scheme='internet-facing', type='application'):
         self.name = name
         self.created_time = datetime.datetime.now()
         self.scheme = scheme
@@ -263,6 +263,7 @@ class FakeLoadBalancer(BaseModel):
         self.tags = {}
         self.arn = arn
         self.dns_name = dns_name
+        self.type = type
 
         self.stack = 'ipv4'
         self.attrs = {
@@ -303,8 +304,9 @@ class FakeLoadBalancer(BaseModel):
         security_groups = properties.get("SecurityGroups")
         subnet_ids = properties.get('Subnets')
         scheme = properties.get('Scheme', 'internet-facing')
+        type = properties.get('Type', 'application')
 
-        load_balancer = elbv2_backend.create_load_balancer(name, security_groups, subnet_ids, scheme=scheme)
+        load_balancer = elbv2_backend.create_load_balancer(name, security_groups, subnet_ids, scheme=scheme, type=type)
         return load_balancer
 
     def get_cfn_attribute(self, attribute_name):
@@ -368,7 +370,7 @@ class ELBv2Backend(BaseBackend):
         self.__dict__ = {}
         self.__init__(region_name)
 
-    def create_load_balancer(self, name, security_groups, subnet_ids, scheme='internet-facing'):
+    def create_load_balancer(self, name, security_groups, subnet_ids, scheme='internet-facing', type='application'):
         vpc_id = None
         subnets = []
         if not subnet_ids:
@@ -393,7 +395,8 @@ class ELBv2Backend(BaseBackend):
             scheme=scheme,
             subnets=subnets,
             vpc_id=vpc_id,
-            dns_name=dns_name)
+            dns_name=dns_name,
+            type=type)
         self.load_balancers[arn] = new_load_balancer
         return new_load_balancer
 
